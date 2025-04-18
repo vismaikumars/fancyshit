@@ -1,10 +1,12 @@
 @startuml
 class Engine {
+  std::string type
   int horsepower
   void start()
 }
 
 class Vehicle {
+  std::string brand
   int year
 }
 
@@ -27,7 +29,9 @@ class Garage {
   return 0
   void addVehicle()
   void showVehicles()
-  int main()
 }
 
+Vehicle <|-- Car
+Vehicle <|-- Truck
+Garage *-- Garage
 @enduml

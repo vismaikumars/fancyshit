@@ -1,14 +1,16 @@
 @startuml
 class Person {
+  std::string name
   int age
   void greet()
 }
 
 class Student {
+  std::string school
   return 0
   void study()
-  int main()
   Student s()
 }
 
+Person <|-- Student
 @enduml

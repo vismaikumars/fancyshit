@@ -26,27 +26,63 @@ def extract_class_info(file_content):
     """Extract class information from C++ code."""
     classes = []
     current_class = None
+    relationships = []
     
     # Split the file into lines
     lines = file_content.split('\n')
     
     for line in lines:
+        # Clean up the line
+        line = line.strip()
+        
+        # Skip empty lines and preprocessor directives
+        if not line or line.startswith('#'):
+            continue
+            
         # Look for class declarations
-        class_match = re.match(r'class\s+(\w+)', line)
+        class_match = re.match(r'class\s+(\w+)(?:\s*:\s*(.+))?', line)
         if class_match:
+            class_name = class_match.group(1)
+            inheritance = class_match.group(2)
+            
             current_class = {
-                'name': class_match.group(1),
+                'name': class_name,
                 'methods': [],
-                'attributes': []
+                'attributes': [],
+                'inheritance': []
             }
             classes.append(current_class)
+            
+            # Parse inheritance
+            if inheritance:
+                # Split by comma and clean up
+                base_classes = [b.strip() for b in inheritance.split(',')]
+                for base in base_classes:
+                    # Remove access specifiers and virtual
+                    base = re.sub(r'^(public|protected|private|virtual)\s+', '', base)
+                    # Remove any trailing braces or other characters
+                    base = re.sub(r'[{\s].*$', '', base)
+                    if base:  # Only add if we have a valid base class name
+                        current_class['inheritance'].append(base)
+                        relationships.append({
+                            'from': class_name,
+                            'to': base,
+                            'type': 'inheritance'
+                        })
             continue
             
         # Look for method declarations
         if current_class:
-            method_match = re.match(r'\s*(\w+)\s+(\w+)\s*\([^)]*\)', line)
+            # Skip constructor declarations
+            if re.match(r'\s*' + current_class['name'] + r'\s*\(', line):
+                continue
+                
+            method_match = re.match(r'\s*(\w+(?:::\w+)*)\s+(\w+)\s*\([^)]*\)', line)
             if method_match:
                 return_type, method_name = method_match.groups()
+                # Skip main function
+                if method_name == 'main':
+                    continue
                 current_class['methods'].append({
                     'name': method_name,
                     'return_type': return_type
@@ -54,34 +90,66 @@ def extract_class_info(file_content):
                 continue
                 
             # Look for attribute declarations
-            attr_match = re.match(r'\s*(\w+)\s+(\w+)\s*;', line)
+            attr_match = re.match(r'\s*(\w+(?:::\w+)*)\s+(\w+)\s*;', line)
             if attr_match:
                 attr_type, attr_name = attr_match.groups()
                 current_class['attributes'].append({
                     'name': attr_name,
                     'type': attr_type
                 })
+                
+                # Check if attribute type is a class (potential composition/aggregation)
+                if any(cls['name'] == attr_type for cls in classes):
+                    relationships.append({
+                        'from': current_class['name'],
+                        'to': attr_type,
+                        'type': 'composition'
+                    })
     
-    return classes
+    return classes, relationships
 
-def generate_plantuml(classes):
+def generate_plantuml(classes, relationships):
     """Generate PlantUML code from class information."""
     plantuml = "@startuml\n"
     
+    # Add classes
     for cls in classes:
         plantuml += f"class {cls['name']} {{\n"
         
         # Add attributes
         for attr in cls['attributes']:
-            plantuml += f"  {attr['type']} {attr['name']}\n"
+            # Escape special characters in attribute names and types
+            attr_type = attr['type'].replace('<', '\\<').replace('>', '\\>')
+            attr_name = attr['name'].replace('<', '\\<').replace('>', '\\>')
+            plantuml += f"  {attr_type} {attr_name}\n"
         
         # Add methods
         for method in cls['methods']:
-            plantuml += f"  {method['return_type']} {method['name']}()\n"
+            # Escape special characters in method names and return types
+            return_type = method['return_type'].replace('<', '\\<').replace('>', '\\>')
+            method_name = method['name'].replace('<', '\\<').replace('>', '\\>')
+            plantuml += f"  {return_type} {method_name}()\n"
         
         plantuml += "}\n\n"
     
+    # Add relationships
+    for rel in relationships:
+        if rel['type'] == 'inheritance':
+            # Escape special characters in class names
+            from_class = rel['from'].replace('<', '\\<').replace('>', '\\>')
+            to_class = rel['to'].replace('<', '\\<').replace('>', '\\>')
+            plantuml += f"{to_class} <|-- {from_class}\n"
+        elif rel['type'] == 'composition':
+            # Escape special characters in class names
+            from_class = rel['from'].replace('<', '\\<').replace('>', '\\>')
+            to_class = rel['to'].replace('<', '\\<').replace('>', '\\>')
+            plantuml += f"{from_class} *-- {to_class}\n"
+    
     plantuml += "@enduml"
+    
+    # Log the generated PlantUML code
+    logger.debug(f"Generated PlantUML code:\n{plantuml}")
+    
     return plantuml
 
 def generate_diagram(input_file, output_dir, project_name):
@@ -90,17 +158,35 @@ def generate_diagram(input_file, output_dir, project_name):
         # Read the input file
         with open(input_file, 'r') as f:
             content = f.read()
+            logger.info(f"Input file content:\n{content}")
         
-        # Extract class information
-        classes = extract_class_info(content)
+        # Extract class information and relationships
+        classes, relationships = extract_class_info(content)
+        
+        # Log extracted information
+        logger.info(f"Extracted classes: {classes}")
+        logger.info(f"Extracted relationships: {relationships}")
         
         # Generate PlantUML code
-        plantuml_code = generate_plantuml(classes)
+        plantuml_code = generate_plantuml(classes, relationships)
         
         # Save PlantUML code to a temporary file
         plantuml_file = os.path.join(output_dir, f'{project_name}.puml')
-        with open(plantuml_file, 'w') as f:
+        with open(plantuml_file, 'w', encoding='utf-8') as f:
             f.write(plantuml_code)
+        
+        # Log the file path and content
+        logger.info(f"Saved PlantUML code to: {plantuml_file}")
+        logger.info(f"PlantUML code:\n{plantuml_code}")
+        
+        # Verify the file was written correctly
+        with open(plantuml_file, 'r', encoding='utf-8') as f:
+            written_content = f.read()
+            if written_content != plantuml_code:
+                logger.error("PlantUML file content mismatch!")
+                logger.error(f"Expected:\n{plantuml_code}")
+                logger.error(f"Got:\n{written_content}")
+                raise Exception("PlantUML file content mismatch")
         
         # Get the absolute path to the jar file
         jar_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'plantuml-mit-1.2025.2.jar')
@@ -110,6 +196,7 @@ def generate_diagram(input_file, output_dir, project_name):
             'java',
             '-jar', jar_path,
             '-tpng',
+            '-charset', 'UTF-8',  # Specify UTF-8 encoding
             plantuml_file
         ]
         
@@ -119,6 +206,11 @@ def generate_diagram(input_file, output_dir, project_name):
         if result.returncode != 0:
             error_msg = f"PlantUML failed with error:\n{result.stderr}\nCommand output:\n{result.stdout}"
             logger.error(error_msg)
+            
+            # Log the contents of the PlantUML file
+            with open(plantuml_file, 'r', encoding='utf-8') as f:
+                logger.error(f"PlantUML file contents:\n{f.read()}")
+            
             raise Exception(error_msg)
         
         return True
