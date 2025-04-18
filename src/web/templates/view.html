@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}View Diagram - C++ to UML Diagram{% endblock %}
+
+{% block extra_css %}
+<style>
+    .diagram-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        background-color: white;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .diagram-image {
+        max-width: 100%;
+        height: auto;
+        transition: transform 0.3s ease;
+    }
+
+    .zoom-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+    }
+
+    .btn-zoom {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-left: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-zoom:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Generated UML Diagram</h4>
+                <div>
+                    <a href="/diagrams/{{ filename }}/download" class="btn btn-primary">
+                        <i class="fas fa-download me-2"></i>Download
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="diagram-container">
+                    <div class="zoom-controls">
+                        <button class="btn btn-zoom" onclick="zoomIn()">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="btn btn-zoom" onclick="zoomOut()">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button class="btn btn-zoom" onclick="resetZoom()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <img src="{{ diagram_path }}" alt="UML Diagram" class="diagram-image" id="diagram">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let scale = 1;
+    const diagram = document.getElementById('diagram');
+
+    function zoomIn() {
+        scale += 0.1;
+        updateZoom();
+    }
+
+    function zoomOut() {
+        if (scale > 0.2) {
+            scale -= 0.1;
+            updateZoom();
+        }
+    }
+
+    function resetZoom() {
+        scale = 1;
+        updateZoom();
+    }
+
+    function updateZoom() {
+        diagram.style.transform = `scale(${scale})`;
+    }
+
+    // Add mouse wheel zoom
+    diagram.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+            zoomIn();
+        } else {
+            zoomOut();
+        }
+    });
+</script>
+{% endblock %} 

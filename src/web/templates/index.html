@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Home - C++ to UML Diagram{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body text-center">
+                <h1 class="card-title mb-4">Welcome to C++ to UML Converter</h1>
+                <p class="lead mb-4">Transform your C++ code into beautiful UML diagrams with just a few clicks.</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <i class="fas fa-code fa-3x mb-3" style="color: var(--secondary-color);"></i>
+                                <h5>Code Import</h5>
+                                <p class="text-muted">Upload your C++ files easily</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <i class="fas fa-project-diagram fa-3x mb-3" style="color: var(--secondary-color);"></i>
+                                <h5>UML Generation</h5>
+                                <p class="text-muted">Automatic diagram creation</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <i class="fas fa-download fa-3x mb-3" style="color: var(--secondary-color);"></i>
+                                <h5>Export Options</h5>
+                                <p class="text-muted">Download in various formats</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <a href="/upload" class="btn btn-primary btn-lg">
+                        <i class="fas fa-upload me-2"></i>Upload Your Code
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

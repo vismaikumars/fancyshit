@@ -1,0 +1,14 @@
+@startuml
+class Person {
+  int age
+  void greet()
+}
+
+class Student {
+  return 0
+  void study()
+  int main()
+  Student s()
+}
+
+@enduml

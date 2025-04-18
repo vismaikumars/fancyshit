@@ -1,0 +1,33 @@
+@startuml
+class Engine {
+  int horsepower
+  void start()
+}
+
+class Vehicle {
+  int year
+}
+
+class Car {
+  int doors
+  void drive()
+}
+
+class Truck {
+  double loadCapacity
+  void drive()
+}
+
+class Garage {
+  Garage garage
+  delete carEngine
+  delete truckEngine
+  delete car
+  delete truck
+  return 0
+  void addVehicle()
+  void showVehicles()
+  int main()
+}
+
+@enduml
